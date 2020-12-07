@@ -4,10 +4,21 @@ import csv
 import secrets
 import myserver
 from getpass import getpass
-
+from cryptography.fernet import Fernet
 seed_max_size = 100000000000000
 
 filename = db_file = "user_db.csv"
+
+key = Fernet.generate_key()
+codec = Fernet(key)
+print ("Fernet Key: ", key)
+message = "Let's encrypt this."
+print ("Original message: ", message)
+e_message = codec.encrypt(message.encode('utf-8'))
+print ("Encrypted message: ", e_message)
+d_message = codec.decrypt(e_message)
+print ("Decrypted Message: ", d_message)
+
 
 def parser(query):
     query_args = query.split(" ")
