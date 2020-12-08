@@ -36,7 +36,7 @@ while (msg != 'q'):
             password = getpass(outputS[1])
             s.send(codec.encrypt(password.encode('utf-8')))
         elif outputS[0] == "3":
-            print("Server says: ", outputS[1])
+            print("Server says:", outputS[1])
         elif outputS[0] == "69":
-            print("Server says: ", outputS[1])
+            print(outputS[1])
 s.close()

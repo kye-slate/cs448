@@ -1,0 +1,19 @@
+
+display log.txt
+login admin
+hi
+there
+hello
+display log.txt
+usage
+help
+login admin
+whoami
+whoami
+login admin
+whoami
+help
+adduser test2
+remove test2
+remove test1
+display log.txt
