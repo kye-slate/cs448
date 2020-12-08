@@ -29,7 +29,7 @@ client_socket.send(key)
 
 user = "Not logged in"
 usage = "3;\n\nUsage:\n help\n login <username>\n whoami\n q\n\n"
-usage = usage + "Admin:\n adduser <username>\n remove <username>\n\n"
+usage = usage + "Admin:\n adduser <username>\n remove <username>\n listall\n\n"
 usage = usage + "User:\n display <file>.txt (only 'log' is viable)\n change password\n"
 
 
@@ -53,7 +53,17 @@ while True:
         if user != "Not logged in":  
             user = "Not logged in"
             client_socket.send(codec.encrypt("69;Logged Out".encode('utf-8')))
+    elif input == "listall":
+        if user == "admin":
+            file = open("user_db.csv")
+
+            count = 0
+            for line in file:
+                count = count + 1
+                client_socket.send(codec.encrypt(("69;"+line.split(',')[0]).encode('utf-8')))
+            client_socket.send(codec.encrypt(("69;"+("Total Users: " + str(count))).encode('utf-8')))    
             
+            file.close()
     if (len(inputS) == 2):
     
         if (inputS[0] == "login"):
@@ -84,37 +94,47 @@ while True:
             else: client_socket.send(codec.encrypt("3;Incorrect Pass or Username".encode('utf-8')))
                     
         elif (inputS[0] == "adduser"):
-            if True:#user == "admin":
-                username = inputS[1]
-
-                client_socket.send(codec.encrypt("2;Password: ".encode('utf-8')))
-                password = codec.decrypt(client_socket.recv(1024)).decode('utf-8')
-                client_socket.send(codec.encrypt("2;Reenter Password: ".encode('utf-8')))
-                repassword = codec.decrypt(client_socket.recv(1024)).decode('utf-8')
-
-                if (password == repassword):
-                    salt = secrets.randbelow(seed_max_size)
-                    input_string = username + password + str(salt)
-
-                    hash = hashlib.sha256(input_string.encode('utf-16'))
-
-                    file = open(filename, "a")
-                    file.write(username + ',' + str(hash.hexdigest()) + ',' + str(salt))
-                    file.close()
+            if user == "admin":
+                file = open("user_db.csv")
+                duplicate = False
+                count = 0
+                for line in file:
+                    count = count + 1
+                    if inputS[1] == line.split(',')[0]: duplicate = True
+                file.close()
+                
+                if duplicate == False:
                     
-                    client_socket.send(codec.encrypt("0".encode('utf-8')))
-                    
-                    client_socket.send(codec.encrypt("3;Creating Directory...".encode('utf-8')))
-                    cwd = os.getcwd()
-                    
-                    path = os.path.join(cwd, username)
-                    try: 
-                        os.mkdir(path)
-                        client_socket.send(codec.encrypt("0;Success".encode('utf-8')))
-                    except OSError as error:
-                        client_socket.send(codec.encrypt("1;Failure".encode('utf-8')))
-                    
-                else: client_socket.send(codec.encrypt("1".encode('utf-8')))
+                    username = inputS[1]
+
+                    client_socket.send(codec.encrypt("2;Password: ".encode('utf-8')))
+                    password = codec.decrypt(client_socket.recv(1024)).decode('utf-8')
+                    client_socket.send(codec.encrypt("2;Reenter Password: ".encode('utf-8')))
+                    repassword = codec.decrypt(client_socket.recv(1024)).decode('utf-8')
+
+                    if (password == repassword):
+                        salt = secrets.randbelow(seed_max_size)
+                        input_string = username + password + str(salt)
+
+                        hash = hashlib.sha256(input_string.encode('utf-16'))
+
+                        file = open(filename, "a+")
+                        file.write("\n" + username + ',' + str(hash.hexdigest()) + ',' + str(salt))
+                        file.close()
+                        
+                        client_socket.send(codec.encrypt("0".encode('utf-8')))
+                        
+                        client_socket.send(codec.encrypt("3;Creating Directory...".encode('utf-8')))
+                        cwd = os.getcwd()
+                        
+                        path = os.path.join(cwd, username)
+                        try: 
+                            os.mkdir(path)
+                            client_socket.send(codec.encrypt("0;Success".encode('utf-8')))
+                        except OSError as error:
+                            client_socket.send(codec.encrypt("1;Failure".encode('utf-8')))
+                        
+                    else: client_socket.send(codec.encrypt("1".encode('utf-8')))
             else:
                 client_socket.send(codec.encrypt("69;Failure - Not Admin".encode('utf-8')))
         
@@ -142,22 +162,24 @@ while True:
                 for row in csv_reader:
                     if username == row[0]: 
                         db_row = row
-                        if db_row == False: count = count + 1
+                    if db_row == False: count = count + 1
                 
-            if db_row != False:
+            if (db_row != False) and (password == repassword):
                 input_string = ""
                 input_string = username + password + str(db_row[2])
                     
                 hash = hashlib.sha256(input_string.encode('utf-16'))
                     
                 if (db_row[1] == str(hash.hexdigest())):
-                    password = getpass("Enter New Password: ")
-                    repasswd = getpass("Re-enter New Password: ")
-                        
-                    if (password == repasswd):      
+                    client_socket.send(codec.encrypt("2;Enter New Password:".encode('utf-8')))
+                    password = codec.decrypt(client_socket.recv(1024)).decode('utf-8')
+                    client_socket.send(codec.encrypt("2;Re-enter New Password:".encode('utf-8')))
+                    repassword = codec.decrypt(client_socket.recv(1024)).decode('utf-8')
+
+                    if (password == repassword):      
                         salt = secrets.randbelow(seed_max_size)
                         input_string = username + password + str(salt)
-                            
+                        
                         hash = hashlib.sha256(input_string.encode('utf-16'))
                             
                         list[count] = username + ',' + str(hash.hexdigest()) + ',' + str(salt)
@@ -166,6 +188,7 @@ while True:
                         for x in list:
                             file.write(x + '\n')
                         file.close()
+                        client_socket.send(codec.encrypt("0".encode('utf-8')))
                     else: client_socket.send(codec.encrypt("1".encode('utf-8')))
         elif (inputS[0] == "remove"):
             if user == "admin":
@@ -185,7 +208,7 @@ while True:
                     for row in csv_reader:
                         if username == row[0]: 
                             db_row = row
-                            if db_row == False: count = count + 1
+                        if db_row == False: count = count + 1
                                
                     
                 index = 0
